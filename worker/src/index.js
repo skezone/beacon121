@@ -1,12 +1,12 @@
 // ============================================================
-// beacon121 — Worker API
+// beacon121 - Worker API
 // Version: 0.1.0
 // Phase: 2 (Database Connection)
 // ============================================================
 
 /**
- * CORS headers — اجازه می‌دهد از مرورگر (beacon121.pages.dev)
- * به این Worker درخواست بزنیم.
+ * CORS headers - allows the browser (beacon121.pages.dev)
+ * to make requests to this Worker.
  */
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
