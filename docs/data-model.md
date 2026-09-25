@@ -1,8 +1,8 @@
 # beacon121 - Data Model
 
-Version: 1.1.0
+Version: 1.2.0
 Phase: 0 (Design)
-Status: LOCKED - v1.1.0 (zoning columns added)
+Status: LOCKED - v1.2.0 (risk columns added)
 
 ---
 
@@ -37,6 +37,10 @@ Represents the physical real estate asset. Does not change when listing changes.
 [LOCKED] year_built         INTEGER
 [LOCKED] zoning_code        TEXT              (e.g. "[Q]C2-1VL")
 [LOCKED] zoning_category    TEXT              (e.g. "Commercial")
+[LOCKED] flood_zone         TEXT              (FEMA flood zone, e.g. "X", "AE")
+[LOCKED] flood_type         TEXT              (flood zone type description)
+[LOCKED] fire_hazard_class  TEXT              (CAL FIRE class, e.g. "High")
+[LOCKED] fire_sra           TEXT              (SRA or LRA)
 [LOCKED] created_at         TIMESTAMP
 [LOCKED] updated_at         TIMESTAMP
 
@@ -167,6 +171,7 @@ Registry of every data source the system uses.
 7. [LOCKED] Jobs table is the only way to schedule heavy work.
 8. [LOCKED] Every row that comes from an external source must reference a Source row.
 9. [LOCKED] zoning_code and zoning_category live on Property, not Listing. Fetched once from LA ArcGIS.
+10. [LOCKED] flood_zone, flood_type, fire_hazard_class, fire_sra live on Property. Fetched once.
 
 ---
 
