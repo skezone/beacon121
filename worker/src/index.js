@@ -15,7 +15,7 @@ const CORS_HEADERS = {
 };
 
 /**
- * ساخت پاسخ JSON استاندارد.
+ * Build a standard JSON response.
  */
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -28,7 +28,7 @@ function json(data, status = 200) {
 }
 
 /**
- * ساخت پاسخ خطا.
+ * Build an error response.
  */
 function error(message, status = 500) {
   return json({ ok: false, error: message }, status);
@@ -36,7 +36,7 @@ function error(message, status = 500) {
 
 /**
  * Route: GET /api/health
- * فقط بررسی می‌کند که Worker و D1 زنده هستند.
+ * Verifies that the Worker and D1 are reachable.
  */
 async function handleHealth(env) {
   try {
@@ -55,7 +55,7 @@ async function handleHealth(env) {
 
 /**
  * Route: GET /api/sources
- * لیست منابع ثبت‌شده در جدول sources را برمی‌گرداند.
+ * Returns the list of registered sources from the sources table.
  */
 async function handleSources(env) {
   try {
@@ -74,7 +74,7 @@ async function handleSources(env) {
 
 /**
  * Route: GET /api/stats
- * خلاصه‌ای از وضعیت دیتابیس (تعداد ردیف‌های هر جدول).
+ * Returns a summary of the database: row count per table.
  */
 async function handleStats(env) {
   try {
@@ -91,25 +91,25 @@ async function handleStats(env) {
 }
 
 /**
- * Entry point اصلی Worker.
- * Cloudflare این تابع را برای هر درخواست صدا می‌زند.
+ * Main entry point of the Worker.
+ * Cloudflare calls this function for every incoming request.
  */
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Preflight برای CORS
+    // Preflight for CORS
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
-    // فقط GET مجاز است در این نسخه
+    // Only GET is allowed in this version
     if (request.method !== 'GET') {
       return error('Method not allowed', 405);
     }
 
-    // Routing ساده
+    // Simple routing
     switch (path) {
       case '/':
       case '/api':
