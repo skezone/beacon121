@@ -9,6 +9,7 @@ import { makePropertyId, makeListingId } from '../core/id.js';
 import { findExistingListing, findExistingProperty } from '../core/deduplicator.js';
 import { insertProperty, insertListing, logListingEvent } from '../core/db.js';
 import { computeScore } from '../core/scoring.js';
+import { ZoningAdapter } from '../adapters/zoning.js';
 
 /**
  * POST /api/listings/manual
@@ -125,6 +126,18 @@ export async function scoreAllListings(env) {
     `)
     .all();
 
+  coexport async function scoreAllListings(env) {
+  const { results: rows } = await env.DB
+    .prepare(`
+      SELECT l.listing_id, l.price, p.property_id, p.apn, p.lot_sqft, p.sqft, p.year_built,
+             p.latitude, p.longitude
+      FROM listings l
+      JOIN properties p ON p.property_id = l.property_id
+      WHERE l.status = 'ACTIVE'
+    `)
+    .all();
+
+  const zoningAdapter = new ZoningAdapter();
   const scored = [];
 
   for (const row of rows) {
@@ -137,9 +150,19 @@ export async function scoreAllListings(env) {
       permitCount = r?.n ?? 0;
     }
 
+    let zoningInfo = null;
+    if (row.latitude && row.longitude) {
+      try {
+        zoningInfo = await zoningAdapter.fetchOne(row.latitude, row.longitude);
+      } catch (e) {
+        zoningInfo = { error: e.message };
+      }
+    }
+
     const s = computeScore(
       { price: row.price, lot_sqft: row.lot_sqft, sqft: row.sqft, year_built: row.year_built },
-      permitCount
+      permitCount,
+      zoningInfo
     );
 
     await env.DB
@@ -164,6 +187,8 @@ export async function scoreAllListings(env) {
       property_id: row.property_id,
       apn: row.apn,
       permit_count: permitCount,
+      zoning: zoningInfo?.zoning ?? null,
+      category: zoningInfo?.category ?? null,
       total_score: s.total_score,
       breakdown: {
         price: s.price_score, adu: s.adu_score, rental: s.rental_score,
