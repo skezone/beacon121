@@ -1,8 +1,8 @@
-# beacon121 — Data Model
+# beacon121 - Data Model
 
 Version: 1.0.0
 Phase: 0 (Design)
-Status: LOCKED — This document is the source of truth for the schema.
+Status: LOCKED - This document is the source of truth for the schema.
 
 ---
 
