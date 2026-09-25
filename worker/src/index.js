@@ -1,10 +1,10 @@
 // ============================================================
 // beacon121 - Worker API
-// Version: 0.3.0
-// Phase: 4 (LA Open Data - LADBS Permits)
+// Version: 0.4.0
+// Phase: 6 (Opportunity Score Engine)
 // ============================================================
 
-import { createManualListing, listListings } from './routes/listings.js';
+import { createManualListing, listListings, scoreAllListings, listScores } from './routes/listings.js';
 import { syncPermits, listPermits } from './routes/permits.js';
 
 const CORS_HEADERS = {
@@ -30,7 +30,7 @@ async function handleHealth(env) {
     return json({
       ok: true,
       service: 'beacon121-api',
-      version: '0.3.0',
+      version: '0.4.0',
       d1_connected: result?.ok === 1,
       timestamp: new Date().toISOString(),
     });
@@ -74,7 +74,6 @@ export default {
     }
 
     try {
-      // GET routes
       if (request.method === 'GET') {
         switch (path) {
           case '/':
@@ -82,15 +81,17 @@ export default {
             return json({
               ok: true,
               service: 'beacon121-api',
-              version: '0.3.0',
+              version: '0.4.0',
               endpoints: [
                 'GET  /api/health',
                 'GET  /api/sources',
                 'GET  /api/stats',
                 'GET  /api/listings',
                 'GET  /api/permits',
+                'GET  /api/scores',
                 'POST /api/listings/manual',
                 'POST /api/permits/sync',
+                'POST /api/scores/run',
               ],
             });
           case '/api/health':
@@ -103,12 +104,13 @@ export default {
             return json(await listListings(env));
           case '/api/permits':
             return json(await listPermits(env));
+          case '/api/scores':
+            return json(await listScores(env));
           default:
             return error(`Not found: ${path}`, 404);
         }
       }
 
-      // POST routes
       if (request.method === 'POST') {
         if (path === '/api/listings/manual') {
           let body;
@@ -121,8 +123,10 @@ export default {
           return json(result, result.created ? 201 : 200);
         }
         if (path === '/api/permits/sync') {
-          const result = await syncPermits(env, 50, 0);
-          return json(result);
+          return json(await syncPermits(env, 50, 0));
+        }
+        if (path === '/api/scores/run') {
+          return json(await scoreAllListings(env));
         }
         return error(`Not found: ${path}`, 404);
       }
