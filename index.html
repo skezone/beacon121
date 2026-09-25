@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>beacon121 - LA Real Estate Opportunity Scanner</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234ea1ff'/%3E%3Ctext x='32' y='44' font-size='40' font-family='Arial,sans-serif' font-weight='700' text-anchor='middle' fill='%2306121f'%3EB%3C/text%3E%3C/svg%3E" />
   <style>
     :root {
@@ -68,6 +69,20 @@
       font-size: 14px;
     }
 
+    .nav {
+      margin-left: auto;
+      display: flex;
+      gap: 14px;
+    }
+
+    .nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13.5px;
+    }
+
+    .nav a:hover { color: var(--text); }
+
     .status {
       display: inline-flex;
       align-items: center;
@@ -97,7 +112,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 14px;
       margin-bottom: 32px;
     }
@@ -120,11 +135,6 @@
     .card .value {
       font-size: 22px;
       font-weight: 600;
-    }
-
-    .card .value.small {
-      font-size: 15px;
-      font-weight: 500;
     }
 
     .section-title {
@@ -173,6 +183,15 @@
 
     .badge.active { background: rgba(63, 185, 80, 0.15); color: var(--ok); }
 
+    .score-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      background: var(--accent-dim);
+      color: #cfe6ff;
+    }
+
     footer {
       margin-top: 48px;
       padding-top: 20px;
@@ -211,6 +230,10 @@
     <header>
       <div class="logo">B</div>
       <h1>beacon121</h1>
+      <nav class="nav">
+        <a href="/">Dashboard</a>
+        <a href="/map.html">Map</a>
+      </nav>
     </header>
 
     <p class="sub">LA Real Estate Opportunity Scanner</p>
@@ -222,32 +245,31 @@
 
     <div class="section-title">Database Status</div>
 
-    <div class="grid" id="stats-grid">
-      <div class="card">
-        <div class="label">Properties</div>
-        <div class="value" id="stat-properties">-</div>
-      </div>
-      <div class="card">
-        <div class="label">Listings</div>
-        <div class="value" id="stat-listings">-</div>
-      </div>
-      <div class="card">
-        <div class="label">Permits</div>
-        <div class="value" id="stat-permits">-</div>
-      </div>
-      <div class="card">
-        <div class="label">Scores</div>
-        <div class="value" id="stat-scores">-</div>
-      </div>
-      <div class="card">
-        <div class="label">Jobs</div>
-        <div class="value" id="stat-jobs">-</div>
-      </div>
-      <div class="card">
-        <div class="label">Sources</div>
-        <div class="value" id="stat-sources">-</div>
-      </div>
+    <div class="grid">
+      <div class="card"><div class="label">Properties</div><div class="value" id="stat-properties">-</div></div>
+      <div class="card"><div class="label">Listings</div><div class="value" id="stat-listings">-</div></div>
+      <div class="card"><div class="label">Permits</div><div class="value" id="stat-permits">-</div></div>
+      <div class="card"><div class="label">Scores</div><div class="value" id="stat-scores">-</div></div>
+      <div class="card"><div class="label">Jobs</div><div class="value" id="stat-jobs">-</div></div>
+      <div class="card"><div class="label">Sources</div><div class="value" id="stat-sources">-</div></div>
     </div>
+
+    <div class="section-title">Top Opportunities</div>
+
+    <table class="sources" id="scores-table">
+      <thead>
+        <tr>
+          <th>Address</th>
+          <th>Score</th>
+          <th>Price Score</th>
+          <th>ADU</th>
+          <th>Permit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="5" style="color: var(--muted);">Loading...</td></tr>
+      </tbody>
+    </table>
 
     <div class="section-title">Registered Sources</div>
 
@@ -269,7 +291,7 @@
 
     <footer>
       <span>Data -> Rules -> Calculations -> Score -> AI Explanation</span>
-      <span>v0.1.0</span>
+      <span>v0.4.0</span>
     </footer>
 
   </div>
@@ -304,11 +326,8 @@
     async function loadHealth() {
       try {
         const data = await fetchJSON('/api/health');
-        if (data.d1_connected) {
-          setStatus('online', 'API online, D1 connected');
-        } else {
-          setStatus('offline', 'API online, D1 not connected');
-        }
+        if (data.d1_connected) setStatus('online', 'API online, D1 connected');
+        else setStatus('offline', 'API online, D1 not connected');
       } catch (e) {
         setStatus('offline', 'Cannot reach API');
         showError('Health check failed: ' + e.message);
@@ -350,9 +369,35 @@
       }
     }
 
+    async function loadScores() {
+      try {
+        const data = await fetchJSON('/api/scores');
+        const tbody = document.querySelector('#scores-table tbody');
+        tbody.innerHTML = '';
+        if (!data.scores.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="color: var(--muted);">No scores yet</td></tr>';
+          return;
+        }
+        for (const s of data.scores) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${s.address_full || '-'}</td>
+            <td><span class="score-badge">${s.total_score}</span></td>
+            <td>${s.price_score}</td>
+            <td>${s.adu_score}</td>
+            <td>${s.permit_score}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (e) {
+        showError('Scores failed: ' + e.message);
+      }
+    }
+
     loadHealth();
     loadStats();
     loadSources();
+    loadScores();
   </script>
 </body>
 </html>
