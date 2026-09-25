@@ -116,7 +116,9 @@ export async function scoreAllListings(env) {
   const { results: rows } = await env.DB
     .prepare(`
       SELECT l.listing_id, l.price, p.property_id, p.apn, p.lot_sqft, p.sqft, p.year_built,
-             p.zoning_code, p.zoning_category
+             p.zoning_code, p.zoning_category,
+             p.flood_zone, p.flood_type,
+             p.fire_hazard_class, p.fire_sra
       FROM listings l
       JOIN properties p ON p.property_id = l.property_id
       WHERE l.status = 'ACTIVE'
@@ -139,10 +141,18 @@ export async function scoreAllListings(env) {
       ? { zoning: row.zoning_code, category: row.zoning_category }
       : null;
 
+    const floodInfo = row.flood_zone
+      ? { flood_zone: row.flood_zone, flood_type: row.flood_type }
+      : null;
+
+    const fireInfo = row.fire_hazard_class
+      ? { hazard_class: row.fire_hazard_class, sra: row.fire_sra }
+      : null;
+
     const s = computeScore(
       { price: row.price, lot_sqft: row.lot_sqft, sqft: row.sqft, year_built: row.year_built },
       permitCount,
-      zoningInfo
+      { zoningInfo, floodInfo, fireInfo }
     );
 
     await env.DB
@@ -167,8 +177,10 @@ export async function scoreAllListings(env) {
       property_id: row.property_id,
       apn: row.apn,
       permit_count: permitCount,
-      zoning: zoningInfo?.zoning ?? null,
-      category: zoningInfo?.category ?? null,
+      zoning: row.zoning_code,
+      category: row.zoning_category,
+      flood_zone: row.flood_zone,
+      fire_hazard_class: row.fire_hazard_class,
       total_score: s.total_score,
       breakdown: {
         price: s.price_score, adu: s.adu_score, rental: s.rental_score,
