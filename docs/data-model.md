@@ -1,8 +1,8 @@
 # beacon121 - Data Model
 
-Version: 1.0.0
+Version: 1.1.0
 Phase: 0 (Design)
-Status: LOCKED - This document is the source of truth for the schema.
+Status: LOCKED - v1.1.0 (zoning columns added)
 
 ---
 
@@ -35,6 +35,8 @@ Represents the physical real estate asset. Does not change when listing changes.
 [LOCKED] sqft               INTEGER
 [LOCKED] lot_sqft           INTEGER
 [LOCKED] year_built         INTEGER
+[LOCKED] zoning_code        TEXT              (e.g. "[Q]C2-1VL")
+[LOCKED] zoning_category    TEXT              (e.g. "Commercial")
 [LOCKED] created_at         TIMESTAMP
 [LOCKED] updated_at         TIMESTAMP
 
@@ -164,6 +166,7 @@ Registry of every data source the system uses.
 6. [LOCKED] source + source_listing_id is the unique key for dedup.
 7. [LOCKED] Jobs table is the only way to schedule heavy work.
 8. [LOCKED] Every row that comes from an external source must reference a Source row.
+9. [LOCKED] zoning_code and zoning_category live on Property, not Listing. Fetched once from LA ArcGIS.
 
 ---
 
