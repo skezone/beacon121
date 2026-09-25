@@ -1,8 +1,8 @@
 # beacon121 - Data Model
 
-Version: 1.2.0
+Version: 1.3.0
 Phase: 0 (Design)
-Status: LOCKED - v1.2.0 (risk columns added)
+Status: LOCKED - v1.3.0 (FEMA flood + CAL FIRE columns active)
 
 ---
 
@@ -172,6 +172,8 @@ Registry of every data source the system uses.
 8. [LOCKED] Every row that comes from an external source must reference a Source row.
 9. [LOCKED] zoning_code and zoning_category live on Property, not Listing. Fetched once from LA ArcGIS.
 10. [LOCKED] flood_zone, flood_type, fire_hazard_class, fire_sra live on Property. Fetched once.
+11. [LOCKED] flood_zone is fetched from LA County SMMAR (ArcGIS). fire_hazard_class is fetched from CA FRAP (ArcGIS). Both are read-only caches.
+12. [LOCKED] risk_score combines flood_penalty and fire_penalty: score = 100 - fp - xp. See worker/src/core/risk.js.
 
 ---
 
