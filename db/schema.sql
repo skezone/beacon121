@@ -39,6 +39,12 @@ CREATE TABLE IF NOT EXISTS properties (
   sqft            INTEGER,
   lot_sqft        INTEGER,
   year_built      INTEGER,
+  zoning_code     TEXT,
+  zoning_category TEXT,
+  flood_zone      TEXT,
+  flood_type      TEXT,
+  fire_hazard_class TEXT,
+  fire_sra        TEXT,
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
