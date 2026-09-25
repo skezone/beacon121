@@ -1,11 +1,12 @@
 // ============================================================
 // beacon121 - Worker API
-// Version: 0.4.0
+// Version: 0.5.0
 // Phase: 6 (Opportunity Score Engine)
 // ============================================================
 
 import { createManualListing, listListings, scoreAllListings, listScores } from './routes/listings.js';
 import { syncPermits, listPermits } from './routes/permits.js';
+import { enrichZoning } from './routes/enrich.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +31,7 @@ async function handleHealth(env) {
     return json({
       ok: true,
       service: 'beacon121-api',
-      version: '0.4.0',
+      version: '0.5.0',
       d1_connected: result?.ok === 1,
       timestamp: new Date().toISOString(),
     });
@@ -81,7 +82,7 @@ export default {
             return json({
               ok: true,
               service: 'beacon121-api',
-              version: '0.4.0',
+              version: '0.5.0',
               endpoints: [
                 'GET  /api/health',
                 'GET  /api/sources',
@@ -92,6 +93,7 @@ export default {
                 'POST /api/listings/manual',
                 'POST /api/permits/sync',
                 'POST /api/scores/run',
+                'POST /api/enrich/zoning',
               ],
             });
           case '/api/health':
@@ -127,6 +129,9 @@ export default {
         }
         if (path === '/api/scores/run') {
           return json(await scoreAllListings(env));
+        }
+        if (path === '/api/enrich/zoning') {
+          return json(await enrichZoning(env));
         }
         return error(`Not found: ${path}`, 404);
       }
