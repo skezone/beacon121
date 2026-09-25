@@ -1,10 +1,11 @@
 // ============================================================
 // beacon121 - Worker API
-// Version: 0.2.0
-// Phase: 3 (Listing Engine - Manual Adapter)
+// Version: 0.3.0
+// Phase: 4 (LA Open Data - LADBS Permits)
 // ============================================================
 
 import { createManualListing, listListings } from './routes/listings.js';
+import { syncPermits, listPermits } from './routes/permits.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -29,7 +30,7 @@ async function handleHealth(env) {
     return json({
       ok: true,
       service: 'beacon121-api',
-      version: '0.2.0',
+      version: '0.3.0',
       d1_connected: result?.ok === 1,
       timestamp: new Date().toISOString(),
     });
@@ -81,13 +82,15 @@ export default {
             return json({
               ok: true,
               service: 'beacon121-api',
-              version: '0.2.0',
+              version: '0.3.0',
               endpoints: [
                 'GET  /api/health',
                 'GET  /api/sources',
                 'GET  /api/stats',
                 'GET  /api/listings',
+                'GET  /api/permits',
                 'POST /api/listings/manual',
+                'POST /api/permits/sync',
               ],
             });
           case '/api/health':
@@ -98,6 +101,8 @@ export default {
             return handleStats(env);
           case '/api/listings':
             return json(await listListings(env));
+          case '/api/permits':
+            return json(await listPermits(env));
           default:
             return error(`Not found: ${path}`, 404);
         }
@@ -114,6 +119,10 @@ export default {
           }
           const result = await createManualListing(env, body);
           return json(result, result.created ? 201 : 200);
+        }
+        if (path === '/api/permits/sync') {
+          const result = await syncPermits(env, 50, 0);
+          return json(result);
         }
         return error(`Not found: ${path}`, 404);
       }
