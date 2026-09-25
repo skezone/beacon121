@@ -1,6 +1,6 @@
 // ============================================================
 // beacon121 - Worker API
-// Version: 0.5.0
+// Version: 0.6.0
 // Phase: 6 (Opportunity Score Engine)
 // ============================================================
 
@@ -31,7 +31,7 @@ async function handleHealth(env) {
     return json({
       ok: true,
       service: 'beacon121-api',
-      version: '0.5.0',
+      version: '0.6.0',
       d1_connected: result?.ok === 1,
       timestamp: new Date().toISOString(),
     });
@@ -82,7 +82,7 @@ export default {
             return json({
               ok: true,
               service: 'beacon121-api',
-              version: '0.5.0',
+              version: '0.6.0',
               endpoints: [
                 'GET  /api/health',
                 'GET  /api/sources',
@@ -94,6 +94,8 @@ export default {
                 'POST /api/permits/sync',
                 'POST /api/scores/run',
                 'POST /api/enrich/zoning',
+                'POST /api/enrich/flood',
+                'POST /api/enrich/fire',
               ],
             });
           case '/api/health':
