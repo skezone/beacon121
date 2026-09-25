@@ -1,6 +1,6 @@
 // ============================================================
 // beacon121 - Opportunity Score Engine
-// Version: 0.3.0
+// Version: 0.4.0
 // All sub-scores are 0-100, weighted into a total score.
 // AI never computes these numbers. Rules do.
 // ============================================================
@@ -124,7 +124,7 @@ export function computeScore(property, permitCount, context) {
      risk * WEIGHTS.risk) / 100;
 
   return {
-    score_version: 'v0.3',
+    score_version: 'v0.4',
     total_score: Math.round(total),
     price_score: price,
     adu_score: adu,
