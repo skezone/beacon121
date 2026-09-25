@@ -1,18 +1,16 @@
 // ============================================================
 // beacon121 - Fire Adapter
 // Fetches CAL FIRE Fire Hazard Severity Zone for a point.
-// Service: services8.arcgis.com/dRbkL75uGyx40MXP/FHSZLRA25_Phase4_v1
-// Layer:   1 (California Fire Hazard Severity Zones)
-// Note: This FeatureServer does not support point queries,
-//       so we use a small envelope around the point.
+// Service: services1.arcgis.com/P5Mv5GY5S66M8Z1Q
+// Layer:   Fire_Hazard_Severity/FeatureServer/0
+// Dataset: CA_FRAP_BND_FIRE_HAZARD_SEVERITY_ZONE
+// Note:    If the point is not inside any FHSZ, returns null.
+//          This is normal for urban areas like LA City.
 // ============================================================
 
 import { fetchJSON } from '../core/fetcher.js';
 
-const BASE = 'https://services8.arcgis.com/dRbkL75uGyx40MXP/arcgis/rest/services/FHSZLRA25_Phase4_v1/FeatureServer/1/query';
-
-// Envelope half-size in degrees. 0.001 deg is roughly 100 meters.
-const HALF = 0.001;
+const BASE = 'https://services1.arcgis.com/P5Mv5GY5S66M8Z1Q/ArcGIS/rest/services/Fire_Hazard_Severity/FeatureServer/0/query';
 
 export class FireAdapter {
   constructor() {
@@ -21,25 +19,23 @@ export class FireAdapter {
 
   /**
    * Query fire hazard severity zone for a single point.
-   * Returns { hazard_class, sra } or null when not found.
+   * Returns { hazard_class, hazard_code, sra } or null when not found.
    */
   async fetchOne(latitude, longitude) {
     if (!latitude || !longitude) return null;
 
-    const envelope = JSON.stringify({
-      xmin: longitude - HALF,
-      ymin: latitude - HALF,
-      xmax: longitude + HALF,
-      ymax: latitude + HALF,
+    const geometry = JSON.stringify({
+      x: longitude,
+      y: latitude,
       spatialReference: { wkid: 4326 },
     });
 
     const url =
-      `${BASE}?geometry=${encodeURIComponent(envelope)}` +
-      `&geometryType=esriGeometryEnvelope` +
+      `${BASE}?geometry=${encodeURIComponent(geometry)}` +
+      `&geometryType=esriGeometryPoint` +
       `&inSR=4326` +
       `&spatialRel=esriSpatialRelIntersects` +
-      `&outFields=HAZ_CLASS,SRA` +
+      `&outFields=HAZ_CLASS,HAZ_CODE,SRA` +
       `&returnGeometry=false` +
       `&f=json`;
 
@@ -49,6 +45,7 @@ export class FireAdapter {
 
     return {
       hazard_class: feat.HAZ_CLASS ?? null,
+      hazard_code: feat.HAZ_CODE ?? null,
       sra: feat.SRA ?? null,
     };
   }
