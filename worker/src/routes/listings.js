@@ -20,7 +20,6 @@ export async function createManualListing(env, body) {
   const raw = await adapter.fetchOne(body);
   const n = normalizeListing(raw);
 
-  // Deduplication: same source + source_listing_id => already exists
   const existingListing = await findExistingListing(env, n.source_key, n.source_listing_id);
   if (existingListing) {
     return {
@@ -32,7 +31,6 @@ export async function createManualListing(env, body) {
     };
   }
 
-  // Deduplication: same normalized address => reuse property
   const existingProperty = await findExistingProperty(env, n.address_full);
   let propertyId;
   let propertyCreated = false;
@@ -59,7 +57,6 @@ export async function createManualListing(env, body) {
     propertyCreated = true;
   }
 
-  // Create listing
   const listingId = makeListingId(n.source_key, n.source_listing_id);
   await insertListing(env, {
     listing_id: listingId,
@@ -117,16 +114,6 @@ export async function listListings(env, limit = 50) {
 }
 
 export async function scoreAllListings(env) {
-  const { results: rows } = await env.DB
-    .prepare(`
-      SELECT l.listing_id, l.price, p.property_id, p.apn, p.lot_sqft, p.sqft, p.year_built
-      FROM listings l
-      JOIN properties p ON p.property_id = l.property_id
-      WHERE l.status = 'ACTIVE'
-    `)
-    .all();
-
-  coexport async function scoreAllListings(env) {
   const { results: rows } = await env.DB
     .prepare(`
       SELECT l.listing_id, l.price, p.property_id, p.apn, p.lot_sqft, p.sqft, p.year_built,
