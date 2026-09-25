@@ -1,5 +1,5 @@
 -- ============================================================
--- beacon121 — D1 Schema
+-- beacon121 - D1 Schema
 -- Version: 1.0.0
 -- Source of truth: docs/data-model.md
 -- ============================================================
@@ -170,10 +170,10 @@ CREATE INDEX IF NOT EXISTS idx_jobs_created  ON jobs(created_at);
 INSERT OR IGNORE INTO sources (source_key, source_type, display_name, base_url, notes)
 VALUES
   ('manual',    'listing',     'Manual Entry',      NULL,                                     'User-provided listings'),
-  ('zillow',    'listing',     'Zillow',            'https://www.zillow.com',                 'Subject to ToS — pluggable adapter'),
-  ('redfin',    'listing',     'Redfin',            'https://www.redfin.com',                 'Subject to ToS — pluggable adapter'),
-  ('realtor',   'listing',     'Realtor.com',       'https://www.realtor.com',                'Subject to ToS — pluggable adapter'),
-  ('crmls',     'listing',     'CRMLS',             'https://www.crmls.org',                  'Licensed MLS — future'),
+  ('zillow',    'listing',     'Zillow',            'https://www.zillow.com',                 'Subject to ToS - pluggable adapter'),
+  ('redfin',    'listing',     'Redfin',            'https://www.redfin.com',                 'Subject to ToS - pluggable adapter'),
+  ('realtor',   'listing',     'Realtor.com',       'https://www.realtor.com',                'Subject to ToS - pluggable adapter'),
+  ('crmls',     'listing',     'CRMLS',             'https://www.crmls.org',                  'Licensed MLS - future'),
   ('ladbs',     'permit',      'LA Dept. of Building & Safety', 'https://data.lacity.org',     'Via Socrata'),
   ('lacity',    'permit',      'City of LA Open Data', 'https://data.lacity.org',              'General LA Open Data'),
   ('census',    'demographic', 'US Census / ACS',   'https://api.census.gov',                 'Free API'),
