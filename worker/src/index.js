@@ -6,7 +6,7 @@
 
 import { createManualListing, listListings, scoreAllListings, listScores } from './routes/listings.js';
 import { syncPermits, listPermits } from './routes/permits.js';
-import { enrichZoning } from './routes/enrich.js';
+import { enrichZoning, enrichFlood, enrichFire } from './routes/enrich.js';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -132,6 +132,12 @@ export default {
         }
         if (path === '/api/enrich/zoning') {
           return json(await enrichZoning(env));
+        }
+        if (path === '/api/enrich/flood') {
+          return json(await enrichFlood(env));
+        }
+        if (path === '/api/enrich/fire') {
+          return json(await enrichFire(env));
         }
         return error(`Not found: ${path}`, 404);
       }
