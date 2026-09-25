@@ -42,10 +42,22 @@ export function calculateRiskScore(floodInfo, fireInfo) {
   const score = Math.max(0, Math.min(100, 100 - fp - xp));
 
   const reasons = [];
-  if (fp === 0) reasons.push('Outside FEMA flood zone');
-  else reasons.push(`Inside FEMA flood zone ${floodZone}`);
-  if (xp === 0) reasons.push('Outside fire hazard zone');
-  else reasons.push(`Inside CAL FIRE ${hazardClass} zone`);
+
+  if (floodZone === null) {
+    reasons.push('Flood data not available');
+  } else if (fp === 0) {
+    reasons.push('Outside FEMA flood zone');
+  } else {
+    reasons.push(`Inside FEMA flood zone ${floodZone}`);
+  }
+
+  if (hazardClass === null) {
+    reasons.push('Outside CAL FIRE hazard zone');
+  } else if (xp === 0) {
+    reasons.push('Outside CAL FIRE hazard zone');
+  } else {
+    reasons.push(`Inside CAL FIRE ${hazardClass} zone`);
+  }
 
   return {
     score,
