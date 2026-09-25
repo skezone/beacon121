@@ -1,8 +1,8 @@
 # beacon121 — Data Model
 
-Version: 0.1.0
+Version: 1.0.0
 Phase: 0 (Design)
-Status: DRAFT — Locked fields marked with [LOCKED]
+Status: LOCKED — This document is the source of truth for the schema.
 
 ---
 
@@ -139,15 +139,31 @@ Queue for background processing.
 
 ---
 
+## Entity 7: Source
+
+Registry of every data source the system uses.
+
+[LOCKED] source_key       TEXT PRIMARY KEY  (zillow, redfin, ladbs, census, ...)
+[LOCKED] source_type      TEXT              (listing, permit, demographic, geo)
+[LOCKED] display_name     TEXT
+[LOCKED] base_url         TEXT
+[LOCKED] is_active        INTEGER DEFAULT 1 (0/1)
+[LOCKED] notes            TEXT
+[LOCKED] created_at       TIMESTAMP
+
+---
+
 ## Locked Decisions (Cannot change without version bump)
 
 1. [LOCKED] property_id and listing_id are separate. Never merge them.
+1.5. [LOCKED] Every Listing, Permit, and Demographic record must include a source_key.
 2. [LOCKED] latitude/longitude live on Property, not on Listing.
 3. [LOCKED] Every score row stores the score_version and inputs_json.
 4. [LOCKED] ListingHistory is append-only. Never delete rows.
 5. [LOCKED] APN is the canonical join to LA County data.
 6. [LOCKED] source + source_listing_id is the unique key for dedup.
 7. [LOCKED] Jobs table is the only way to schedule heavy work.
+8. [LOCKED] Every row that comes from an external source must reference a Source row.
 
 ---
 
