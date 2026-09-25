@@ -20,7 +20,7 @@ export class LADBSAdapter {
    * @param {number} offset - pagination offset
    */
   async fetchBatch(limit = 100, offset = 0) {
-    const url = `${BASE}?$limit=${limit}&$offset=${offset}&$order=pcis_permit DESC`;
+    const url = `${BASE}?$limit=${limit}&$offset=${offset}`;
     return await fetchJSON(url);
   }
 
