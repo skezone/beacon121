@@ -11,7 +11,15 @@ import { LADBSAdapter } from '../adapters/ladbs.js';
  */
 export async function syncPermits(env, limit = 50, offset = 0) {
   const adapter = new LADBSAdapter();
-  const raw = await adapter.fetchBatch(limit, offset);
+  let raw;
+  try {
+    raw = await adapter.fetchBatch(limit, offset);
+  } catch (e) {
+    return { ok: false, error: `Fetch failed: ${e.message}`, fetched: 0, inserted: 0, skipped: 0 };
+  }
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: 'Unexpected response shape', raw_type: typeof raw };
+  }
 
   let inserted = 0;
   let skipped = 0;
