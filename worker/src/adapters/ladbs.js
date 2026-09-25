@@ -1,51 +1,41 @@
 // ============================================================
 // beacon121 - LADBS Adapter
-// Fetches permits from LA Open Data (Socrata).
-// Dataset: LADBS Soft Story Permits
-// Resource: nc44-6znn
+// Fetches building permits from LA Open Data (Socrata).
+// Dataset: Building Permits Issued from 2020 to Present
+// Resource: pi9x-tg5x
 // ============================================================
 
 import { fetchJSON } from '../core/fetcher.js';
 
-const BASE = 'https://data.lacity.org/resource/nc44-6znn.json';
+const BASE = 'https://data.lacity.org/resource/pi9x-tg5x.json';
 
 export class LADBSAdapter {
   constructor() {
     this.key = 'ladbs';
   }
 
-  /**
-   * Fetch a batch of permits from Socrata.
-   * @param {number} limit - number of rows
-   * @param {number} offset - pagination offset
-   */
   async fetchBatch(limit = 100, offset = 0) {
-    const url = `${BASE}?$limit=${limit}&$offset=${offset}`;
-    return await fetchJSON(url);
+    const url = `${BASE}?$limit=${limit}&$offset=${offset}&$order=issue_date DESC`;
+    return await fetchJSON(url, { timeoutMs: 20000 });
   }
 
-  /**
-   * Transform a raw Socrata row into our permits table shape.
-   */
   transform(row) {
-    const apn = row.assessor_book && row.assessor_page && row.assessor_parcel
-      ? `${row.assessor_book}-${row.assessor_page}-${row.assessor_parcel}`
-      : null;
-
     return {
-      permit_id:        row.pcis_permit || row.reference_old_permit || null,
-      source_key:       this.key,
-      apn:              apn,
-      address:          row.address || null,
-      permit_type:      row.permit_type || null,
-      permit_subtype:   row.permit_sub_type || null,
-      status:           row.latest_status || null,
-      issued_date:      row.status_date || null,
-      finalized_date:   null,
-      valuation:        null,
-      description:      row.permit_type || null,
-      latitude:         row.latitude ? parseFloat(row.latitude) : null,
-      longitude:        row.longitude ? parseFloat(row.longitude) : null,
+      permit_id:      row.permit_nbr || null,
+      source_key:     this.key,
+      apn:            row.apn || null,
+      address:        row.primary_address
+                        ? `${row.primary_address}${row.zip_code ? ', ' + row.zip_code : ''}`
+                        : null,
+      permit_type:    row.permit_type || null,
+      permit_subtype: row.permit_sub_type || null,
+      status:         row.status_desc || null,
+      issued_date:    row.issue_date || null,
+      finalized_date: row.status_date || null,
+      valuation:      row.valuation ? parseInt(row.valuation, 10) : null,
+      description:    row.work_desc || null,
+      latitude:       row.lat ? parseFloat(row.lat) : null,
+      longitude:      row.lon ? parseFloat(row.lon) : null,
     };
   }
 }
