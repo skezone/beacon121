@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>beacon121 - Map</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234ea1ff'/%3E%3Ctext x='32' y='44' font-size='40' font-family='Arial,sans-serif' font-weight='700' text-anchor='middle' fill='%2306121f'%3EB%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  body { margin: 0; font-family: -apple-system, sans-serif; background: #0b0f14; color: #e6edf3; }
+  header { padding: 12px 20px; background: #111821; border-bottom: 1px solid #1e2a38; display: flex; align-items: center; gap: 12px; }
+  header .logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg,#4ea1ff,#7ee1ff); display:flex; align-items:center; justify-content:center; color:#06121f; font-weight:700; }
+  header h1 { font-size: 16px; margin: 0; }
+  header nav a { color: #8b98a5; margin-left: 16px; font-size: 13px; text-decoration: none; }
+  header nav a:hover { color: #e6edf3; }
+  #map { width: 100%; height: calc(100vh - 55px); }
+  .popup { font-size: 13px; }
+  .popup b { color: #4ea1ff; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">B</div>
+  <h1>beacon121 - Map</h1>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/map.html">Map</a>
+  </nav>
+</header>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const API_BASE = 'https://beacon121-api.ske-devzone.workers.dev';
+  const map = L.map('map').setView([34.0522, -118.2437], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19,
+  }).addTo(map);
+
+  fetch(API_BASE + '/api/permits')
+    .then(r => r.json())
+    .then(d => {
+      const markers = [];
+      for (const p of d.permits) {
+        if (!p.latitude || !p.longitude) continue;
+        const m = L.marker([p.latitude, p.longitude]).addTo(map);
+        m.bindPopup(`
+          <div class="popup">
+            <b>${p.address || 'Unknown'}</b><br>
+            Type: ${p.permit_type || '-'}<br>
+            Status: ${p.status || '-'}<br>
+            Issued: ${(p.issued_date || '').slice(0, 10)}<br>
+            Permit: ${p.permit_id}
+          </div>
+        `);
+        markers.push(m);
+      }
+      if (markers.length) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+      }
+    })
+    .catch(e => console.error(e));
+</script>
+</body>
+</html>
