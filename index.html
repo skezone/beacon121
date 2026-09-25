@@ -15,6 +15,7 @@
       --accent-dim: #1c3a5c;
       --ok: #3fb950;
       --warn: #d29922;
+      --err: #f85149;
     }
 
     * { box-sizing: border-box; }
@@ -71,23 +72,28 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: var(--accent-dim);
-      color: #cfe6ff;
-      border: 1px solid #2a4a6d;
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 12.5px;
       margin-left: 52px;
       margin-bottom: 36px;
+      border: 1px solid;
+      transition: all 0.3s;
     }
+
+    .status.checking { background: #2a2a2a; color: #d0d0d0; border-color: #444; }
+    .status.online   { background: rgba(63, 185, 80, 0.15); color: var(--ok); border-color: #2d5c34; }
+    .status.offline  { background: rgba(248, 81, 73, 0.15); color: var(--err); border-color: #6a2723; }
 
     .dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--ok);
-      box-shadow: 0 0 8px var(--ok);
+      background: currentColor;
     }
+
+    .status.online .dot { box-shadow: 0 0 8px var(--ok); }
+    .status.offline .dot { box-shadow: 0 0 8px var(--err); }
 
     .grid {
       display: grid;
@@ -112,6 +118,11 @@
     }
 
     .card .value {
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .card .value.small {
       font-size: 15px;
       font-weight: 500;
     }
@@ -124,38 +135,43 @@
       margin: 40px 0 14px;
     }
 
-    ul.phases {
-      list-style: none;
-      padding: 0;
-      margin: 0;
+    table.sources {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
-      background: var(--panel);
+      font-size: 13.5px;
     }
 
-    ul.phases li {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 18px;
+    table.sources th,
+    table.sources td {
+      text-align: left;
+      padding: 10px 16px;
       border-bottom: 1px solid var(--border);
-      font-size: 14px;
     }
 
-    ul.phases li:last-child { border-bottom: none; }
+    table.sources th {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      background: #0e1620;
+    }
+
+    table.sources tr:last-child td { border-bottom: none; }
 
     .badge {
       font-size: 11px;
       padding: 2px 8px;
       border-radius: 999px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
+      background: #1a2433;
+      color: var(--muted);
     }
 
-    .badge.done { background: rgba(63, 185, 80, 0.15); color: var(--ok); }
-    .badge.now  { background: rgba(210, 153, 34, 0.15); color: var(--warn); }
-    .badge.todo { background: #1a2433; color: var(--muted); }
+    .badge.active { background: rgba(63, 185, 80, 0.15); color: var(--ok); }
 
     footer {
       margin-top: 48px;
@@ -177,6 +193,16 @@
       font-size: 12.5px;
       color: #cfe6ff;
     }
+
+    .error-box {
+      background: rgba(248, 81, 73, 0.1);
+      border: 1px solid #6a2723;
+      color: #ffb4ae;
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      margin-top: 16px;
+    }
   </style>
 </head>
 <body>
@@ -189,50 +215,144 @@
 
     <p class="sub">LA Real Estate Opportunity Scanner</p>
 
-    <div class="status">
+    <div id="status" class="status checking">
       <span class="dot"></span>
-      Deployment online — Phase 0 in progress
+      <span id="status-text">Connecting to API...</span>
     </div>
 
-    <div class="grid">
+    <div class="section-title">Database Status</div>
+
+    <div class="grid" id="stats-grid">
       <div class="card">
-        <div class="label">Project</div>
-        <div class="value">beacon121</div>
+        <div class="label">Properties</div>
+        <div class="value" id="stat-properties">-</div>
       </div>
       <div class="card">
-        <div class="label">Repository</div>
-        <div class="value"><code>skezone/beacon121</code></div>
+        <div class="label">Listings</div>
+        <div class="value" id="stat-listings">-</div>
       </div>
       <div class="card">
-        <div class="label">Hosting</div>
-        <div class="value">Cloudflare Pages</div>
+        <div class="label">Permits</div>
+        <div class="value" id="stat-permits">-</div>
       </div>
       <div class="card">
-        <div class="label">Cost Target</div>
-        <div class="value">$0 / month</div>
+        <div class="label">Scores</div>
+        <div class="value" id="stat-scores">-</div>
+      </div>
+      <div class="card">
+        <div class="label">Jobs</div>
+        <div class="value" id="stat-jobs">-</div>
+      </div>
+      <div class="card">
+        <div class="label">Sources</div>
+        <div class="value" id="stat-sources">-</div>
       </div>
     </div>
 
-    <div class="section-title">Roadmap</div>
+    <div class="section-title">Registered Sources</div>
 
-    <ul class="phases">
-      <li><span class="badge now">NOW</span> Phase 0 — Design &amp; Setup</li>
-      <li><span class="badge todo">NEXT</span> Phase 1 — Infrastructure</li>
-      <li><span class="badge todo">TODO</span> Phase 2 — Database Schema</li>
-      <li><span class="badge todo">TODO</span> Phase 3 — Listing Engine</li>
-      <li><span class="badge todo">TODO</span> Phase 4 — LA Open Data</li>
-      <li><span class="badge todo">TODO</span> Phase 5 — Geographic Engine</li>
-      <li><span class="badge todo">TODO</span> Phase 6 — Property Analysis</li>
-      <li><span class="badge todo">TODO</span> Phase 7 — Scoring</li>
-      <li><span class="badge todo">TODO</span> Phase 8 — AI Reports</li>
-      <li><span class="badge todo">TODO</span> Phase 9 — Dashboard</li>
-    </ul>
+    <table class="sources" id="sources-table">
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Type</th>
+          <th>Display Name</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4" style="color: var(--muted);">Loading...</td></tr>
+      </tbody>
+    </table>
+
+    <div id="error-container"></div>
 
     <footer>
-      <span>Data → Rules → Calculations → Score → AI Explanation</span>
+      <span>Data -> Rules -> Calculations -> Score -> AI Explanation</span>
       <span>v0.1.0</span>
     </footer>
 
   </div>
+
+  <script>
+    const API_BASE = 'https://beacon121-api.ske-devzone.workers.dev';
+
+    function setStatus(state, text) {
+      const el = document.getElementById('status');
+      el.className = 'status ' + state;
+      document.getElementById('status-text').textContent = text;
+    }
+
+    function setStat(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function showError(message) {
+      const container = document.getElementById('error-container');
+      const box = document.createElement('div');
+      box.className = 'error-box';
+      box.textContent = message;
+      container.appendChild(box);
+    }
+
+    async function fetchJSON(path) {
+      const res = await fetch(API_BASE + path);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' on ' + path);
+      return res.json();
+    }
+
+    async function loadHealth() {
+      try {
+        const data = await fetchJSON('/api/health');
+        if (data.d1_connected) {
+          setStatus('online', 'API online, D1 connected');
+        } else {
+          setStatus('offline', 'API online, D1 not connected');
+        }
+      } catch (e) {
+        setStatus('offline', 'Cannot reach API');
+        showError('Health check failed: ' + e.message);
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const data = await fetchJSON('/api/stats');
+        const c = data.counts;
+        setStat('stat-properties', c.properties);
+        setStat('stat-listings', c.listings);
+        setStat('stat-permits', c.permits);
+        setStat('stat-scores', c.scores);
+        setStat('stat-jobs', c.jobs);
+        setStat('stat-sources', c.sources);
+      } catch (e) {
+        showError('Stats failed: ' + e.message);
+      }
+    }
+
+    async function loadSources() {
+      try {
+        const data = await fetchJSON('/api/sources');
+        const tbody = document.querySelector('#sources-table tbody');
+        tbody.innerHTML = '';
+        for (const s of data.sources) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${s.source_key}</code></td>
+            <td>${s.source_type}</td>
+            <td>${s.display_name}</td>
+            <td><span class="badge ${s.is_active ? 'active' : ''}">${s.is_active ? 'active' : 'inactive'}</span></td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (e) {
+        showError('Sources failed: ' + e.message);
+      }
+    }
+
+    loadHealth();
+    loadStats();
+    loadSources();
+  </script>
 </body>
 </html>
