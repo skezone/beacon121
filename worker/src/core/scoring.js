@@ -1,6 +1,6 @@
 // ============================================================
 // beacon121 - Opportunity Score Engine
-// Version: 0.1.0
+// Version: 0.2.0
 // All sub-scores are 0-100, weighted into a total score.
 // AI never computes these numbers. Rules do.
 // ============================================================
@@ -30,17 +30,47 @@ function priceScore(price) {
 }
 
 /**
- * ADU score: based on lot size and existing footprint.
- * A large lot with a modest house is a strong ADU candidate.
+ * ADU score: based on lot size, footprint, and zoning.
+ * Zoning matters most:
+ *   Residential zones (R1, R2, R3, RD, RE) allow ADU by right.
+ *   Commercial zones (C1, C2, C4) are restricted.
+ *   Manufacturing (M, CM) usually not allowed.
+ * When zoning is unknown, fall back to lot ratio only.
  */
-function aduScore(lotSqft, sqft) {
-  if (!lotSqft) return 50;
-  const ratio = sqft ? lotSqft / sqft : 4;
-  if (ratio > 5) return 95;
-  if (ratio > 4) return 80;
-  if (ratio > 3) return 65;
-  if (ratio > 2) return 50;
-  return 30;
+function aduScore(lotSqft, sqft, zoning, category) {
+  const cat = (category || '').toLowerCase();
+  const zone = (zoning || '').toUpperCase();
+
+  // Zoning gate: reject non-residential categories outright.
+  const isResidential =
+    cat.includes('residential') ||
+    /^(R|RD|RE|RS|RW)/.test(zone) ||
+    /\[Q\]R/.test(zone);
+
+  const isCommercial =
+    cat.includes('commercial') || /^(C|CR|CW)/.test(zone);
+
+  const isManufacturing =
+    cat.includes('manufacturing') || /^(M|CM|MR)/.test(zone);
+
+  // Lot ratio fallback (used inside residential only)
+  let ratioScore = 50;
+  if (lotSqft && sqft) {
+    const ratio = lotSqft / sqft;
+    if (ratio > 5) ratioScore = 95;
+    else if (ratio > 4) ratioScore = 80;
+    else if (ratio > 3) ratioScore = 65;
+    else if (ratio > 2) ratioScore = 50;
+    else ratioScore = 30;
+  } else if (lotSqft) {
+    ratioScore = 60;
+  }
+
+  if (isManufacturing) return 10;
+  if (isCommercial) return 25;
+  if (isResidential) return ratioScore;
+  // Unknown zoning: neutral, but note uncertainty in inputs_json later.
+  return Math.round(ratioScore * 0.7);
 }
 
 /**
@@ -105,9 +135,12 @@ function riskScore() {
   return 70;
 }
 
-export function computeScore(property, permitCount) {
+export function computeScore(property, permitCount, zoningInfo) {
+  const zoning = zoningInfo?.zoning ?? null;
+  const category = zoningInfo?.category ?? null;
+
   const price = priceScore(property.price);
-  const adu = aduScore(property.lot_sqft, property.sqft);
+  const adu = aduScore(property.lot_sqft, property.sqft, zoning, category);
   const rental = rentalScore(property.price);
   const renovation = renovationScore(property.year_built);
   const permit = permitScore(permitCount);
@@ -126,7 +159,7 @@ export function computeScore(property, permitCount) {
      risk * WEIGHTS.risk) / 100;
 
   return {
-    score_version: 'v0.1',
+    score_version: 'v0.2',
     total_score: Math.round(total),
     price_score: price,
     adu_score: adu,
@@ -136,6 +169,6 @@ export function computeScore(property, permitCount) {
     neighborhood_score: neighborhood,
     comparable_score: comparable,
     risk_score: risk,
-    inputs_json: JSON.stringify({ property, permitCount }),
+    inputs_json: JSON.stringify({ property, permitCount, zoningInfo }),
   };
 }
