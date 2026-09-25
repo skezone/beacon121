@@ -8,6 +8,7 @@ import { normalizeListing } from '../core/normalizer.js';
 import { makePropertyId, makeListingId } from '../core/id.js';
 import { findExistingListing, findExistingProperty } from '../core/deduplicator.js';
 import { insertProperty, insertListing, logListingEvent } from '../core/db.js';
+import { computeScore } from '../core/scoring.js';
 
 /**
  * POST /api/listings/manual
@@ -112,4 +113,83 @@ export async function listListings(env, limit = 50) {
   }
 
   return { ok: true, count: results.length, listings: results };
+}
+
+export async function scoreAllListings(env) {
+  const { results: rows } = await env.DB
+    .prepare(`
+      SELECT l.listing_id, l.price, p.property_id, p.apn, p.lot_sqft, p.sqft, p.year_built
+      FROM listings l
+      JOIN properties p ON p.property_id = l.property_id
+      WHERE l.status = 'ACTIVE'
+    `)
+    .all();
+
+  const scored = [];
+
+  for (const row of rows) {
+    let permitCount = 0;
+    if (row.apn) {
+      const r = await env.DB
+        .prepare('SELECT COUNT(*) AS n FROM permits WHERE apn = ?')
+        .bind(row.apn)
+        .first();
+      permitCount = r?.n ?? 0;
+    }
+
+    const s = computeScore(
+      { price: row.price, lot_sqft: row.lot_sqft, sqft: row.sqft, year_built: row.year_built },
+      permitCount
+    );
+
+    await env.DB
+      .prepare(`
+        INSERT INTO scores (
+          property_id, score_version, total_score,
+          price_score, adu_score, rental_score, renovation_score,
+          neighborhood_score, comparable_score, permit_score, risk_score,
+          inputs_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .bind(
+        row.property_id, s.score_version, s.total_score,
+        s.price_score, s.adu_score, s.rental_score, s.renovation_score,
+        s.neighborhood_score, s.comparable_score, s.permit_score, s.risk_score,
+        s.inputs_json
+      )
+      .run();
+
+    scored.push({
+      listing_id: row.listing_id,
+      property_id: row.property_id,
+      apn: row.apn,
+      permit_count: permitCount,
+      total_score: s.total_score,
+      breakdown: {
+        price: s.price_score, adu: s.adu_score, rental: s.rental_score,
+        renovation: s.renovation_score, permit: s.permit_score,
+        neighborhood: s.neighborhood_score, comparable: s.comparable_score, risk: s.risk_score,
+      },
+    });
+  }
+
+  return { ok: true, scored_count: scored.length, results: scored };
+}
+
+export async function listScores(env, limit = 50) {
+  const { results } = await env.DB
+    .prepare(`
+      SELECT
+        s.id, s.total_score, s.score_version, s.computed_at,
+        s.price_score, s.adu_score, s.rental_score, s.renovation_score,
+        s.neighborhood_score, s.comparable_score, s.permit_score, s.risk_score,
+        p.address_full, p.address_city, p.address_zip, p.apn
+      FROM scores s
+      JOIN properties p ON p.property_id = s.property_id
+      ORDER BY s.computed_at DESC
+      LIMIT ?
+    `)
+    .bind(limit)
+    .all();
+  return { ok: true, count: results.length, scores: results };
 }
